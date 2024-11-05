@@ -1,0 +1,16 @@
+{
+    "name": "sergeytsalkov/colon",
+    "type": "library",
+    "authors": [
+        {
+            "name": "Sergey Tsalkov",
+            "email": "stsalkov@gmail.com"
+        }
+    ],
+    "autoload": {
+        "classmap": [
+            "src/"
+        ]
+    },
+    "require": {}
+}
