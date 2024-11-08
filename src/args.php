@@ -1,31 +1,24 @@
 <?php
-class ColonFormatRouter implements Iterator, Countable {
-  private $routes=[];
+class ColonFormatArgs implements Iterator, Countable {
+  private $args = [];
   private $position=0; // iterator
 
-  function add($path, $fn) {
-    $this->routes[$path] = new ColonFormatRoute($path, $fn);
-  }
-
-  function find($path) {
-    $Route = $this->routes[$path] ?? null;
-    if (! $path) {
-      throw new Exception("Unknown route: $path");
-    }
-    return $Route;
+  function add($name) {
+    $Arg = new ColonFormatArg($name);
+    $this->args[] = $Arg;
+    return $Arg;
   }
 
   // ***** Count
   #[\ReturnTypeWillChange]
   function count() {
-    return count($this->routes);
+    return count($this->args);
   }
 
   // ***** Iterator
   #[\ReturnTypeWillChange]
   function current() {
-    $routes = array_values($this->routes);
-    return $this->valid() ? $routes[$this->position] : null;
+    return $this->valid() ? $this->args[$this->position] : null;
   }
   #[\ReturnTypeWillChange]
   function key() {

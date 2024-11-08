@@ -17,6 +17,6 @@ class ColonFormatParser {
     }
 
     $callable = $this->Router->find($route);
-    return new ColonFormatJob($callable, $args);
+    return new ColonFormatJob($route, $callable, $args);
   }
 }

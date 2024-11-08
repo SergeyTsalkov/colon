@@ -1,26 +1,25 @@
 <?php
 class ColonFormatJob {
+  private $route;
   private $fn;
   private $args;
 
-  function __construct($fn, array $args) {
-    if (! is_callable($fn)) {
-      throw new Exception("Not a callable function: $fn");
-    }
-
+  function __construct(string $route, $fn, array $args) {
+    $this->route = $route;
     $this->fn = $fn;
     $this->args = $args;
   }
 
   function run() {
-    return $this->run_with_args($this->fn, $this->args);
+    return $this->runWithArgs();
   }
 
-  private function run_with_args(callable $fn, array $args) {
-    $Refl = $this->reflect($fn);
+  private function runWithArgs() {
+    $fn = $this->fn;
+    $args = $this->args;
 
     $fn_args = [];
-    foreach ($Refl->getParameters() as $Param) {
+    foreach ($this->reflectParameters() as $Param) {
       $name = $Param->getName();
 
       if (array_key_exists($name, $args)) {
@@ -33,34 +32,5 @@ class ColonFormatJob {
     }
 
     return $fn(...$fn_args);
-  }
-
-  private function reflect(callable $fn) {
-    if ($fn instanceof Closure) {
-      return new ReflectionFunction($fn);
-    }
-    if (is_array($fn) && count($fn) == 2) {
-      $Refl = new ReflectionClass($fn[0]);
-      return $Refl->getMethod($fn[1]);
-    }
-    if (is_string($fn)) {
-      if (function_exists($fn)) {
-        return new ReflectionFunction($fn);
-      }
-
-      $class = $method = '';
-      if (substr_count($fn, '::')) {
-        list($class, $method) = explode('::', $fn, 2);
-      }
-      else if (substr_count($fn, ':')) {
-        list($class, $method) = explode(':', $fn, 2);
-      }
-      if ($class && $method) {
-        $Refl = new ReflectionClass($class);
-        return $Refl->getMethod($method);
-      }
-    }
-
-    throw new Exception("This doesn't seem to be a callable function or method");
   }
 }
