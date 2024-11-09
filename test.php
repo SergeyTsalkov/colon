@@ -25,4 +25,4 @@ $Router->add('testroute:two', 'MyClass:expArray');
 
 $Parser = new ColonFormatParser($Router);
 $Job = $Parser->parseArgv($argv);
-$Job->run();
+var_dump(strval($Job));
