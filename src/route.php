@@ -61,7 +61,12 @@ class ColonFormatRoute {
 
   private function runnableFuncArgs(array $args) {
     $fn_args = [];
-    foreach ($this->reflectParameters() as $Param) {
+    $Params = $this->reflectParameters();
+    if (count($Params) == 1 && strval($Params[0]->getType()) == 'array') {
+      return [$args];
+    }
+
+    foreach ($Params as $Param) {
       $name = $Param->getName();
 
       if (array_key_exists($name, $args)) {

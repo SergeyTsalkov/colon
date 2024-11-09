@@ -12,11 +12,16 @@ class MyClass {
       echo "your race is {$this->race}\n";
     }
   }
+
+  function expArray(array $hash=[]) {
+    var_dump($hash);
+  }
 }
 
 
 $Router = new ColonFormatRouter();
 $Router->add('testroute:one', 'MyClass:hello');
+$Router->add('testroute:two', 'MyClass:expArray');
 
 $Parser = new ColonFormatParser($Router);
 $Job = $Parser->parseArgv($argv);
