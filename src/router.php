@@ -9,7 +9,7 @@ class ColonFormatRouter implements Iterator, Countable {
 
   function find($path) {
     $Route = $this->routes[$path] ?? null;
-    if (! $path) {
+    if (! $Route) {
       throw new Exception("Unknown route: $path");
     }
     return $Route;

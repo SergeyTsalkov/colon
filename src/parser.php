@@ -1,7 +1,7 @@
 <?php
 class ColonFormatParser {
   private $Router;
-
+  
   function __construct(ColonFormatRouter $Router) {
     $this->Router = $Router;
   }
@@ -9,6 +9,7 @@ class ColonFormatParser {
   function parseArgv(array $argv) {
     array_shift($argv);
     $route = array_shift($argv);
+    if (! $route) throw new Exception("You didn't specify a function to run!");
 
     $args = [];
     foreach ($argv as $arg) {
@@ -16,7 +17,7 @@ class ColonFormatParser {
       $args[$key] = $value;
     }
 
-    $callable = $this->Router->find($route);
-    return new ColonFormatJob($route, $callable, $args);
+    $Route = $this->Router->find($route);
+    return new ColonFormatJob($Route, $args);
   }
 }
