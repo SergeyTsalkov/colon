@@ -20,7 +20,11 @@ class ColonFormatJobSet implements Iterator, Countable {
   function run() {
     $results = [];
     foreach ($this->Jobs as $Job) {
-      $results[] = $Job->run();
+      $result = $Job->run();
+
+      if (is_string($result) && strlen($result) > 0) {
+        $results[] = $result;
+      }
     }
     return implode("\n", $results);
   }

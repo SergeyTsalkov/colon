@@ -4,6 +4,10 @@ class ColonFormatRouter implements Iterator, Countable {
   private $expansions=[];
   private $position=0; // iterator
 
+  function __construct() {
+    $this->add('help', [$this, 'help']);
+  }
+
   function add(string $path, $fn) {
     $this->routes[$path] = new ColonFormatRoute($path, $fn);
   }
@@ -22,6 +26,14 @@ class ColonFormatRouter implements Iterator, Countable {
 
   function findExpansion(string $key, string $value) {
     return $this->expansions[$key][$value] ?? null;
+  }
+
+  function help() {
+    $results = ["--- AVAILABLE COMMANDS ---"];
+    foreach ($this->routes as $Route) {
+      $results[] = $Route->help();
+    }
+    return implode("\n", $results);
   }
 
   static function get() {

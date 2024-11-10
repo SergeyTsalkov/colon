@@ -28,4 +28,7 @@ $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
 
 $Parser = new ColonFormatParser($Router);
 $JobSet = $Parser->parseArgv($argv);
-$JobSet->run();
+$result = $JobSet->run();
+if ($result) {
+  echo $result . "\n";
+}
