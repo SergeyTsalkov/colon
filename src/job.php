@@ -12,6 +12,18 @@ class ColonFormatJob {
     return $this->Route->run($this->args);
   }
 
+  function args() {
+    return $this->args;
+  }
+
+  function hasArg(string $key) {
+    return array_key_exists($key, $this->args);
+  }
+
+  function setArg(string $key, string $value) {
+    $this->args[$key] = $value;
+  }
+
   function __toString() {
     $args = [];
     foreach ($this->args as $key => $value) {

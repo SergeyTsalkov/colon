@@ -8,8 +8,8 @@ class ColonFormatParser {
 
   function parseArgv(array $argv) {
     array_shift($argv);
-    $route = array_shift($argv);
-    if (! $route) throw new Exception("You didn't specify a function to run!");
+    $path = array_shift($argv);
+    if (! $path) throw new Exception("You didn't specify a function to run!");
 
     $args = [];
     foreach ($argv as $arg) {
@@ -17,7 +17,14 @@ class ColonFormatParser {
       $args[$key] = $value;
     }
 
-    $Route = $this->Router->find($route);
-    return new ColonFormatJob($Route, $args);
+    return $this->makeJob($path, $args);
+  }
+
+  function makeJob(string $path, array $args) {
+    $Route = $this->Router->find($path);
+    $Job = new ColonFormatJob($Route, $args);
+    $JobSet = new ColonFormatJobSet($this->Router, $Job);
+    $JobSet->expand();
+    return $JobSet;
   }
 }

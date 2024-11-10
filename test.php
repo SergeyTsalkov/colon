@@ -19,10 +19,13 @@ class MyClass {
 }
 
 
-$Router = new ColonFormatRouter();
+$Router = ColonFormatRouter::get();
 $Router->add('testroute:one', 'MyClass:hello');
 $Router->add('testroute:two', 'MyClass:expArray');
 
+$Router->addExpansion('name', 'all', fn() => ['Sergey', 'Kevin', 'Dusty']);
+$Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
+
 $Parser = new ColonFormatParser($Router);
-$Job = $Parser->parseArgv($argv);
-var_dump(strval($Job));
+$JobSet = $Parser->parseArgv($argv);
+$JobSet->run();
