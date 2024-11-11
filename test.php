@@ -5,6 +5,12 @@ require_once __DIR__ . '/vendor/autoload.php';
 class MyClass {
   public $race;
 
+  function hello_args() {
+    $Args = new ColonFormatArgs();
+    $Args->add('race');
+    return $Args;
+  }
+
   function hello($name, int $age = 15) { 
     echo "hello {$name}! your age is {$age}\n";
 
@@ -13,7 +19,13 @@ class MyClass {
     }
   }
 
-  function expArray(array $hash=[]) {
+  function expArray_args() {
+    $Args = new ColonFormatArgs();
+    $Args->add('title')->required();
+    return $Args;
+  }
+
+  function expArray() {
     var_dump($hash);
   }
 }

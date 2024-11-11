@@ -9,6 +9,29 @@ class ColonFormatArgs implements Iterator, Countable {
     return $Arg;
   }
 
+  function validate(array $hash) {
+    foreach ($this as $Arg) {
+      if ($Arg->is_required && !array_key_exists($Arg->name, $hash)) {
+        throw new Exception("Missing required argument: {$Arg->name}");
+      }
+    }
+  }
+
+  static function merge(?ColonFormatArgs ...$ArgSets) {
+    $combined = [];
+    foreach ($ArgSets as $ArgSet) {
+      if (! $ArgSet) continue;
+
+      foreach ($ArgSet as $Arg) {
+        $combined[$Arg->name] = $Arg;
+      }
+    }
+
+    $Combined = new ColonFormatArgs();
+    $Combined->args = array_values($combined);
+    return $Combined;
+  }
+
   // ***** Count
   #[\ReturnTypeWillChange]
   function count() {

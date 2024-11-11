@@ -1,34 +1,67 @@
 <?php
 class ColonFormatRoute {
+  const TYPE_METHOD = 1;
+  const TYPE_STATIC_METHOD = 2;
+  const TYPE_CLOSURE = 3;
+  const TYPE_FUNC_STRING = 4;
+
   // path assigned in route creation
   public $path;
 
-  // function passed in route creation, may require massaging to actually run
+  // massaged function, class:method strings have been converted
+  // to [class, method] for simplicity
   public $fn;
-
-  // massaged $fn, should be runnable
-  private $runnable;
+  public $func_type;
 
   function __construct(string $path, $fn) {
     $this->path = $path;
-    $this->fn = $fn;
+    $this->fn = $this->parseFunc($fn);
+    $this->func_type = $this->determineFuncType($this->fn);
   }
 
-  function args() {
-    $Args = new ColonFormatArgs();
+  function expectedArgs() {
+    $Args1 = new ColonFormatArgs();
     foreach ($this->reflectParameters() as $Param) {
       $name = $Param->getName();
       $is_required = !$Param->isDefaultValueAvailable();
 
-      $Arg = $Args->add($name);
+      $Arg = $Args1->add($name);
       $Arg->is_required = $is_required;
     }
-    return $Args;
+
+    $Args2 = null;
+    if ($this->func_type == self::TYPE_METHOD) {
+      $Args2 = $this->runAdjacentFunc(null, 'args', 'ColonFormatArgs');
+    }
+
+    return ColonFormatArgs::merge($Args1, $Args2);
+  }
+
+  function runAdjacentFunc(?object $Object, string $name, ?string $expected_type=null) {
+    if ($this->func_type != self::TYPE_METHOD) {
+      return;
+    }
+
+    if (! $Object) $Object = $this->Object();
+    $method = $this->method();
+
+    $adj_method = sprintf('%s_%s', $method, $name);
+
+    $result = null;
+    if (is_callable([$Object, $adj_method])) {
+      $result = $Object->$adj_method();
+    }
+    if (!is_null($result) && $expected_type && !($result instanceof $expected_type)) {
+      $class_name = get_class($Object);
+      throw new Exception("{$class_name}:{$method} should return a {$expected_type} object");
+    }
+
+    return $result;
   }
 
   function help() {
     $arg_ret = [];
-    foreach ($this->args() as $Arg) {
+    foreach ($this->expectedArgs() as $Arg) {
       $arg_ret[] = sprintf('%s%s', $Arg, !$Arg->is_required ? '(?)' : '');
     }
 
@@ -36,30 +69,7 @@ class ColonFormatRoute {
     return $this->path;
   }
 
-  function run(array $args=[]) {
-    if ($Object = $this->runnableObject()) {
-      $Refl = new ReflectionClass($Object);
-
-      foreach ($args as $key => $value) {
-        if (! $Refl->hasProperty($key)) continue;
-        $Object->$key = $value;
-      }
-    }
-
-    $runnable = $this->runnable();
-    $fn_args = $this->runnableFuncArgs($args);
-    return $runnable(...$fn_args);
-  }
-
-  private function runnableObject() {
-    $runnable = $this->runnable();
-
-    if (is_array($runnable) && count($runnable) == 2 && is_object($runnable[0])) {
-      return $runnable[0];
-    }
-  }
-
-  private function runnableFuncArgs(array $args) {
+  public function funcArgs(array $args) {
     $fn_args = [];
     $Params = $this->reflectParameters();
     if (count($Params) == 1 && strval($Params[0]->getType()) == 'array') {
@@ -74,76 +84,126 @@ class ColonFormatRoute {
       } else if ($Param->isDefaultValueAvailable()) {
         $fn_args[] = $Param->getDefaultValue();
       } else {
-        throw new Exception("Unable to run: argument $name is not defined!");
+        throw new Exception("Unable to run $this: argument $name is not defined!");
       }
     }
 
     return $fn_args;
   }
 
-  private function runnable() {
-    if (! $this->runnable) $this->runnable = $this->_runnable();
-    return $this->runnable;
+  
+  function ObjectMethod(): array {
+    $Object = $this->Object();
+    $method = $this->method();
+    if ($Object && $method) {
+      return [$Object, $method];
+    }
+    return [];
   }
 
-  private function _runnable() {
-    if (is_callable($this->fn)) {
-      if ($this->fn instanceof Closure) {
-        return $this->fn;
-      }
-      if (is_array($this->fn) && count($this->fn) == 2) {
-        return $this->fn;
-      }
+  // create a new object if our $fn needs one
+  // Job class should cache this result so class:validate() runs on the same object
+  // as the main function we're going to run
+  function Object() {
+    if ($this->func_type != self::TYPE_METHOD) {
+      return;
+    }
+
+    $class_or_object = $this->fn[0];
+    $Object = null;
+    if (is_string($class_or_object)) {
+      return new $class_or_object();
+    } 
+    if (is_object($class_or_object)) {
+      return $class_or_object;
+    }
+
+    throw new Exception("Function {$this} does not look valid");
+  }
+
+  function Method() {
+    if (! in_array($this->func_type, [self::TYPE_METHOD, self::TYPE_STATIC_METHOD])) {
+      return;
+    }
+
+    return $this->fn[1];
+  }
+
+  // massage the likely-callable we received
+  // transform strings like class::method and class:method into [class, method]
+  // we don't verify that it's actually callable until the verify/run steps
+  private function parseFunc($fn) {
+    if (is_array($fn) 
+      && count($fn) == 2 
+      && is_string($fn[1])
+      && (is_string($fn[0]) || is_object($fn[0]))
+    ) {
+      return $fn;
+    }
+
+    if ($fn instanceof Closure && is_callable($fn)) {
+      return $fn;
     }
     
-    if (is_string($this->fn)) {
-      if (function_exists($this->fn)) return $this->fn;
+    if (is_string($fn)) {
+      if (function_exists($fn)) return $fn;
 
       $class = $method = '';
-      if (substr_count($this->fn, '::')) {
-        list($class, $method) = explode('::', $this->fn, 2);
+      if (substr_count($fn, '::')) {
+        list($class, $method) = explode('::', $fn, 2);
       }
-      else if (substr_count($this->fn, ':')) {
-        list($class, $method) = explode(':', $this->fn, 2);
+      else if (substr_count($fn, ':')) {
+        list($class, $method) = explode(':', $fn, 2);
       }
 
       if (!$class || !$method) {
-        throw new Exception("Function {$this->fn} does not look valid");
+        throw new Exception("Function for $this does not look valid");
       }
-      if (! class_exists($class)) {
-        throw new Exception("Class $class does not exist");
-      }
-
-      $Refl = (new ReflectionClass($class))->getMethod($method);
-      if ($Refl->isStatic()) {
-        return [$class, $method];
-      }
-
-      return [new $class(), $method];
+      
+      return [$class, $method];
     }
 
 
-    throw new Exception("Function {$this->fn} does not look valid");
+    throw new Exception("Function for $this does not look valid");
+  }
+
+  private function determineFuncType($fn) {
+    if ($fn instanceof Closure && is_callable($fn)) {
+      return self::TYPE_CLOSURE;
+    }
+    if (is_string($fn) && is_callable($fn)) {
+      return self::TYPE_FUNC_STRING;
+    }
+    if (is_array($fn) && count($fn) == 2) {
+      if ($this->reflect()->isStatic()) {
+        return self::TYPE_STATIC_METHOD;
+      }
+      return self::TYPE_METHOD;
+    }
+
+    throw new Exception("Function for $this does not look valid");
   }
 
   private function reflect() {
-    $fn = $this->runnable();
-
-    if ($fn instanceof Closure) {
-      return new ReflectionFunction($fn);
+    if ($this->fn instanceof Closure) {
+      return new ReflectionFunction($this->fn);
     }
-    if (is_array($fn) && count($fn) == 2) {
-      $Refl = new ReflectionClass($fn[0]);
-      return $Refl->getMethod($fn[1]);
+    if (is_array($this->fn) && count($this->fn) == 2) {
+      $Refl = new ReflectionClass($this->fn[0]);
+      return $Refl->getMethod($this->fn[1]);
     }
-    if (is_string($fn) && function_exists($fn)) {
-      return new ReflectionFunction($fn);
+    if (is_string($this->fn) && function_exists($this->fn)) {
+      return new ReflectionFunction($this->fn);
     }
 
-    throw new Exception("This doesn't seem to be a callable function or method");
+    throw new Exception("Function for $this does not look valid");
   }
 
   private function reflectParameters() {
     return $this->reflect()->getParameters();
+  }
+
+  function __toString() {
+    return $this->path;
   }
 }
