@@ -1,6 +1,6 @@
 <?php
 class ColonFormatJob {
-  private $ObjectMethod;
+  private $Object;
   private $Route;
   private $args;
 
@@ -23,41 +23,65 @@ class ColonFormatJob {
 
   function validate() {
     $Args = $this->Route->expectedArgs();
-    return $Args->validate($this->args);
+    $Args->validate($this->args);
+
+    $this->runAdjacentFunc('_validate');
+    $this->runAdjacentFunc('validate');
   }
 
   function run() {
     $this->validate();
     $fn = $this->Route->fn;
-    $fn_args = $this->Route->funcArgs($this->args);
-
-    list($Object, $method) = $this->ObjectMethod();
-    if ($Object && $method) {
-      $fn = [$Object, $method];
-      $Refl = new ReflectionClass($Object);
-
-      foreach ($this->args as $key => $value) {
-        if (! $Refl->hasProperty($key)) continue;
-        $Object->$key = $value;
-      }
+    if ($ObjectMethod = $this->ObjectMethod()) {
+      $fn = $ObjectMethod;
     }
     
-    return $fn(...$fn_args);
+    return ColonFormatRoute::runWithArgs($fn, $this->args);
   }
 
-  function ObjectMethod() {
-    if (! $this->ObjectMethod) {
-      $this->ObjectMethod = $this->Route->ObjectMethod();
+  function runAdjacentFunc(string $name, ?string $expected_type=null) {
+    if ($Object = $this->Object()) {
+      return $this->Route->runAdjacentFunc($Object, $name, $expected_type, $this->args);
     }
-    return $this->ObjectMethod;
   }
+
+  function Object() {
+    if (! $this->Object) {
+      $this->Object = $this->Route->Object();
+      if ($this->Object) {
+        $Refl = new ReflectionClass($this->Object);
+
+        foreach ($this->args as $key => $value) {
+          if (! $Refl->hasProperty($key)) continue;
+          $this->Object->$key = $value;
+        }
+      }
+    }
+
+    return $this->Object;
+  }
+
+  function method() {
+    return $this->Route->method();
+  }
+
+  function ObjectMethod(): array {
+    $Object = $this->Object();
+    $method = $this->method();
+    if ($Object && $method) {
+      return [$Object, $method];
+    }
+    return [];
+  }
+
+  
 
   function __toString() {
-    $args = [];
+    $args = [$this->Route->path];
     foreach ($this->args as $key => $value) {
-      $args[] = escapeshellarg(sprintf('%s:%s', $key, $value));
+      $args[] = sprintf('%s:%s', $key, $value);
     }
 
-    return sprintf('%s %s', escapeshellarg($this->Route->path), implode(' ', $args));
+    return implode(' ', array_map('escapeshellarg', $args));
   }
 }

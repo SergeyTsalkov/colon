@@ -3,12 +3,24 @@
 require_once __DIR__ . '/vendor/autoload.php';
 
 class MyClass {
-  public $race;
+  public $race='human';
 
   function hello_args() {
     $Args = new ColonFormatArgs();
     $Args->add('race');
     return $Args;
+  }
+
+  function hello_validate($name) {
+    if ($name == 'Kevin') {
+      throw new Exception("name must not be Kevin");
+    }
+  }
+
+  function validate() {
+    if ($this->race == 'black') {
+      throw new Exception("race must not be black");
+    }
   }
 
   function hello($name, int $age = 15) { 

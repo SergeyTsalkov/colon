@@ -31,25 +31,26 @@ class ColonFormatRoute {
 
     $Args2 = null;
     if ($this->func_type == self::TYPE_METHOD) {
-      $Args2 = $this->runAdjacentFunc(null, 'args', 'ColonFormatArgs');
+      $Args2 = $this->runAdjacentFunc(null, '_args', 'ColonFormatArgs');
     }
 
     return ColonFormatArgs::merge($Args1, $Args2);
   }
 
-  function runAdjacentFunc(?object $Object, string $name, ?string $expected_type=null) {
+  function runAdjacentFunc(?object $Object, string $name, ?string $expected_type, array $args=[]) {
     if ($this->func_type != self::TYPE_METHOD) {
       return;
     }
 
     if (! $Object) $Object = $this->Object();
-    $method = $this->method();
+    if (substr($name, 0, 1) == '_') $method = $this->method() . $name;
+    else $method = $name;
 
-    $adj_method = sprintf('%s_%s', $method, $name);
+    $fn = [$Object, $method];
 
     $result = null;
-    if (is_callable([$Object, $adj_method])) {
-      $result = $Object->$adj_method();
+    if (is_callable($fn)) {
+      $result = ColonFormatRoute::runWithArgs($fn, $args);
     }
     if (!is_null($result) && $expected_type && !($result instanceof $expected_type)) {
       $class_name = get_class($Object);
@@ -57,6 +58,28 @@ class ColonFormatRoute {
     }
 
     return $result;
+  }
+
+  static function runWithArgs(callable $fn, array $args) {
+    $fn_args = [];
+    $Params = ColonFormatRoute::_reflect($fn)->getParameters();
+    if (count($Params) == 1 && strval($Params[0]->getType()) == 'array') {
+      return $fn([$args]);
+    }
+
+    foreach ($Params as $Param) {
+      $name = $Param->getName();
+
+      if (array_key_exists($name, $args)) {
+        $fn_args[] = $args[$name];
+      } else if ($Param->isDefaultValueAvailable()) {
+        $fn_args[] = $Param->getDefaultValue();
+      } else {
+        throw new Exception("Unable to run $fn: argument $name is not defined!");
+      }
+    }
+
+    return $fn(...$fn_args);
   }
 
   function help() {
@@ -68,29 +91,6 @@ class ColonFormatRoute {
     if ($arg_ret) return sprintf('%s :: %s', $this->path, implode(', ', $arg_ret));
     return $this->path;
   }
-
-  public function funcArgs(array $args) {
-    $fn_args = [];
-    $Params = $this->reflectParameters();
-    if (count($Params) == 1 && strval($Params[0]->getType()) == 'array') {
-      return [$args];
-    }
-
-    foreach ($Params as $Param) {
-      $name = $Param->getName();
-
-      if (array_key_exists($name, $args)) {
-        $fn_args[] = $args[$name];
-      } else if ($Param->isDefaultValueAvailable()) {
-        $fn_args[] = $Param->getDefaultValue();
-      } else {
-        throw new Exception("Unable to run $this: argument $name is not defined!");
-      }
-    }
-
-    return $fn_args;
-  }
-
   
   function ObjectMethod(): array {
     $Object = $this->Object();
@@ -184,18 +184,23 @@ class ColonFormatRoute {
     throw new Exception("Function for $this does not look valid");
   }
 
-  private function reflect() {
-    if ($this->fn instanceof Closure) {
-      return new ReflectionFunction($this->fn);
+  static function _reflect($fn) {
+    if ($fn instanceof Closure) {
+      return new ReflectionFunction($fn);
     }
-    if (is_array($this->fn) && count($this->fn) == 2) {
-      $Refl = new ReflectionClass($this->fn[0]);
-      return $Refl->getMethod($this->fn[1]);
+    if (is_array($fn) && count($fn) == 2) {
+      $Refl = new ReflectionClass($fn[0]);
+      return $Refl->getMethod($fn[1]);
     }
-    if (is_string($this->fn) && function_exists($this->fn)) {
-      return new ReflectionFunction($this->fn);
+    if (is_string($fn) && function_exists($fn)) {
+      return new ReflectionFunction($fn);
     }
+  }
 
+  private function reflect() {
+    if ($result = self::_reflect($this->fn)) {
+      return $result;
+    }
     throw new Exception("Function for $this does not look valid");
   }
 
