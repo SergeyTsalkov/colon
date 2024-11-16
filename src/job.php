@@ -5,6 +5,10 @@ class ColonFormatJob {
   private $args;
 
   function __construct(ColonFormatRoute $Route, array $args) {
+    if (! isset($args['job_path'])) {
+      $args['job_path'] = $Route->path;
+    }
+
     $this->Route = $Route;
     $this->args = $args;
   }
@@ -37,6 +41,12 @@ class ColonFormatJob {
     }
     
     return ColonFormatRoute::runWithArgs($fn, $this->args);
+  }
+
+  function runConfig() {
+    $general = $this->runAdjacentFunc('config', 'array') ?: [];
+    $specific = $this->runAdjacentFunc('_config', 'array') ?: [];
+    return array_merge($general, $specific);
   }
 
   function runAdjacentFunc(string $name, ?string $expected_type=null) {

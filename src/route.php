@@ -52,9 +52,17 @@ class ColonFormatRoute {
     if (is_callable($fn)) {
       $result = ColonFormatRoute::runWithArgs($fn, $args);
     }
-    if (!is_null($result) && $expected_type && !($result instanceof $expected_type)) {
+    if (!is_null($result) && $expected_type) {
       $class_name = get_class($Object);
-      throw new Exception("{$class_name}:{$method} should return a {$expected_type} object");
+
+      if ($expected_type == 'array') {
+        if (! is_array($result)) {
+          throw new Exception("{$class_name}:{$method} should return an array");
+        }
+      }
+      else if (!($result instanceof $expected_type)) {
+        throw new Exception("{$class_name}:{$method} should return a {$expected_type} object");
+      }
     }
 
     return $result;

@@ -5,6 +5,14 @@ require_once __DIR__ . '/vendor/autoload.php';
 class MyClass {
   public $race='human';
 
+  function config() {
+    return ['channel' => 'common'];
+  }
+
+  function hello_config() {
+    return ['channel' => 'config', 'threads' => 10];
+  }
+
   function hello_args() {
     $Args = new ColonFormatArgs();
     $Args->add('race');
@@ -52,6 +60,8 @@ $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
 
 $Parser = new ColonFormatParser($Router);
 $JobSet = $Parser->parseArgv($argv);
+var_dump($JobSet->runConfig());die;
+
 $result = $JobSet->run();
 if ($result) {
   echo $result . "\n";

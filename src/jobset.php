@@ -29,6 +29,17 @@ class ColonFormatJobSet implements Iterator, Countable {
     return implode("\n", $results);
   }
 
+  function runConfig() {
+    if (! $this->Jobs) return;
+    return $this->Jobs[0]->runConfig();
+  }
+
+  function validate() {
+    foreach ($this->Jobs as $Job) {
+      $Job->validate();
+    }
+  }
+
   function expand() {
     $expansions = [];
 
