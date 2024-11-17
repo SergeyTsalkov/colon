@@ -8,8 +8,7 @@ class ColonFormatParser {
 
   function parseArgv(array $argv) {
     array_shift($argv);
-    $path = array_shift($argv);
-    if (! $path) throw new Exception("You didn't specify a function to run!");
+    $path = strval(array_shift($argv));
 
     $args = [];
     foreach ($argv as $arg) {

@@ -4,8 +4,10 @@ class ColonFormatRouter implements Iterator, Countable {
   private $expansions=[];
   private $position=0; // iterator
 
+  public $help_route;
+
   function __construct() {
-    $this->add('help', [$this, 'help']);
+    $this->help_route = new ColonFormatRoute('', [$this, 'help']);
   }
 
   function add(string $path, $fn) {
@@ -13,6 +15,10 @@ class ColonFormatRouter implements Iterator, Countable {
   }
 
   function find(string $path) {
+    if (strlen($path) == 0) {
+      return $this->help_route;
+    }
+
     $Route = $this->routes[$path] ?? null;
     if (! $Route) {
       throw new Exception("Unknown route: $path");
