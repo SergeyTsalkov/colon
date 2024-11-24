@@ -1,11 +1,9 @@
 <?php
 class ColonFormatJobSet implements Iterator, Countable {
-  private $Router;
   private $Jobs = [];
   private $position = 0;
 
-  function __construct(ColonFormatRouter $Router, ColonFormatJob $Job) {
-    $this->Router = $Router;
+  function __construct(ColonFormatJob $Job) {
     $this->add($Job);
   }
 
@@ -37,36 +35,6 @@ class ColonFormatJobSet implements Iterator, Countable {
   function validate() {
     foreach ($this->Jobs as $Job) {
       $Job->validate();
-    }
-  }
-
-  function expand() {
-    $expansions = [];
-
-    foreach ($this->Jobs as $Job) {
-      foreach ($Job->args() as $key => $value) {
-        if ($fn = $this->Router->findExpansion($key, $value)) {
-          $expansions[] = [$key, $value, $fn];
-        }
-      }
-    }
-
-    foreach ($expansions as list($key, $value, $fn)) {
-      $new_values = $fn();
-      $this->expandKV($key, $value, $new_values);
-    }
-  }
-
-  private function expandKV(string $key, string $value, array $new_values) {
-    foreach ($this->Jobs as $Job) {
-      if (! $Job->hasArg($key)) continue;
-
-      $this->remove($Job);
-      foreach ($new_values as $new_value) {
-        $NewJob = clone $Job;
-        $NewJob->setArg($key, $new_value);
-        $this->add($NewJob);
-      }
     }
   }
 

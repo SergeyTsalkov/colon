@@ -87,11 +87,6 @@ class ColonFormatJob {
   
 
   function __toString() {
-    $args = [$this->Route->path];
-    foreach ($this->args as $key => $value) {
-      $args[] = sprintf('%s:%s', $key, $value);
-    }
-
-    return implode(' ', array_map('escapeshellarg', $args));
+    return ColonFormatParser::makeArgv($this->Route->path, $this->args);
   }
 }

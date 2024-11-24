@@ -6,24 +6,35 @@ class ColonFormatParser {
     $this->Router = $Router;
   }
 
-  function parseArgv(array $argv) {
+  static function parseArgv(array $argv): array {
     array_shift($argv);
     $path = strval(array_shift($argv));
 
     $args = [];
     foreach ($argv as $arg) {
       list($key, $value) = explode(':', $arg, 2);
+      if (!substr_count($arg, ':') || !strlen($key)) {
+        throw new Exception('Arguments should be in the format "key:value"');
+      }
+
       $args[$key] = $value;
     }
 
-    return $this->makeJob($path, $args);
+    return [$path, $args];
   }
 
-  function makeJob(string $path, array $args) {
-    $Route = $this->Router->find($path);
-    $Job = new ColonFormatJob($Route, $args);
-    $JobSet = new ColonFormatJobSet($this->Router, $Job);
-    $JobSet->expand();
-    return $JobSet;
+  static function makeArgv(string $path, array $args=[]) {
+    $parts = [$path];
+    foreach ($args as $key => $value) {
+      $parts[] = sprintf('%s:%s', $key, $value);
+    }
+
+    return implode(' ', array_map('escapeshellarg', $parts));
   }
+
+  function JobFromArgv(array $argv): ColonFormatJobSet {
+    list($path, $args) = self::parseArgv($argv);
+    return $this->Router->makeJob($path, $args);
+  }
+
 }

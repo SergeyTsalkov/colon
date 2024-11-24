@@ -36,6 +36,42 @@ class ColonFormatRouter implements Iterator, Countable {
     return implode("\n", $results);
   }
 
+  function makeJob(string $path, array $args): ColonFormatJobSet {
+    $Route = $this->find($path);
+    $Job = new ColonFormatJob($Route, $args);
+    return $this->expand($Job);
+  }
+
+  private function expand(ColonFormatJob $Job) {
+    $expansions = [];
+
+    foreach ($Job->args() as $key => $value) {
+      if ($fn = $this->findExpansion($key, $value)) {
+        $expansions[] = [$key, $value, $fn];
+      }
+    }
+
+    $JobSet = new ColonFormatJobSet($Job);
+    foreach ($expansions as list($key, $value, $fn)) {
+      $new_values = $fn();
+      $this->expandKV($JobSet, $key, $value, $new_values);
+    }
+    return $JobSet;
+  }
+
+  private function expandKV(ColonFormatJobSet $JobSet, string $key, string $value, array $new_values) {
+    $ReplaceJobs = array_filter(iterator_to_array($JobSet), fn($Job) => $Job->hasArg($key));
+
+    foreach ($ReplaceJobs as $Job) {
+      $JobSet->remove($Job);
+      foreach ($new_values as $new_value) {
+        $NewJob = clone $Job;
+        $NewJob->setArg($key, $new_value);
+        $JobSet->add($NewJob);
+      }
+    }
+  }
+
   static function get() {
     static $Router;
     if (! $Router) $Router = new self();

@@ -55,11 +55,11 @@ $Router = ColonFormatRouter::get();
 $Router->add('testroute:one', 'MyClass:hello');
 $Router->add('testroute:two', 'MyClass:expArray');
 
-$Router->addExpansion('name', 'all', fn() => ['Sergey', 'Kevin', 'Dusty']);
+$Router->addExpansion('name', 'all', fn() => ['Sergey', 'Josh', 'Dusty']);
 $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
 
 $Parser = new ColonFormatParser($Router);
-$JobSet = $Parser->parseArgv($argv);
+$JobSet = $Parser->JobFromArgv($argv);
 
 $result = $JobSet->run();
 if ($result) {
