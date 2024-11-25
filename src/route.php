@@ -29,10 +29,11 @@ class ColonFormatRoute {
 
     $Args2 = null;
     if ($this->funcType() == self::TYPE_METHOD) {
-      $Args2 = $this->runAdjacentFunc(null, '_args', 'ColonFormatArgs');
+      $Args2 = $this->runAdjacentFunc(null, 'args', 'ColonFormatArgs');
+      $Args3 = $this->runAdjacentFunc(null, '_args', 'ColonFormatArgs');
     }
 
-    return ColonFormatArgs::merge($Args1, $Args2);
+    return ColonFormatArgs::merge($Args1, $Args2, $Args3);
   }
 
   function runAdjacentFunc(?object $Object, string $name, ?string $expected_type, array $args=[]) {
