@@ -4,6 +4,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 
 class MyClass {
   public $race='human';
+  public $job_path;
 
   function config() {
     return ['channel' => 'common'];
@@ -33,6 +34,7 @@ class MyClass {
 
   function hello($name, int $age = 15) { 
     echo "hello {$name}! your age is {$age}\n";
+    echo "the path is {$this->job_path}\n";
 
     if ($this->race) {
       echo "your race is {$this->race}\n";
@@ -60,6 +62,10 @@ $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
 
 $Parser = new ColonFormatParser($Router);
 $JobSet = $Parser->JobFromArgv($argv);
+
+foreach ($JobSet as $Job) {
+  echo "Running: $Job\n";
+}
 
 $result = $JobSet->run();
 if ($result) {

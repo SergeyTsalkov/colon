@@ -5,15 +5,18 @@ class ColonFormatJob {
   private $args;
 
   function __construct(ColonFormatRoute $Route, array $args) {
-    if (! isset($args['job_path'])) {
-      $args['job_path'] = $Route->path;
-    }
-
     $this->Route = $Route;
     $this->args = $args;
   }
 
-  function args() {
+  function args($include_shadow=false) {
+    $shadow = [
+      'job_path' => $this->Route->path,
+    ];
+
+    if ($include_shadow) {
+      return array_merge($shadow, $this->args);
+    }
     return $this->args;
   }
 
@@ -40,7 +43,7 @@ class ColonFormatJob {
       $fn = $ObjectMethod;
     }
     
-    return ColonFormatRoute::runWithArgs($fn, $this->args);
+    return ColonFormatRoute::runWithArgs($fn, $this->args(true));
   }
 
   function runConfig() {
@@ -51,7 +54,7 @@ class ColonFormatJob {
 
   function runAdjacentFunc(string $name, ?string $expected_type=null) {
     if ($Object = $this->Object()) {
-      return $this->Route->runAdjacentFunc($Object, $name, $expected_type, $this->args);
+      return $this->Route->runAdjacentFunc($Object, $name, $expected_type, $this->args(true));
     }
   }
 
@@ -61,7 +64,7 @@ class ColonFormatJob {
       if ($this->Object) {
         $Refl = new ReflectionClass($this->Object);
 
-        foreach ($this->args as $key => $value) {
+        foreach ($this->args(true) as $key => $value) {
           if (! $Refl->hasProperty($key)) continue;
           $this->Object->$key = $value;
         }
@@ -84,9 +87,7 @@ class ColonFormatJob {
     return [];
   }
 
-  
-
   function __toString() {
-    return ColonFormatParser::makeArgv($this->Route->path, $this->args);
+    return ColonFormatParser::makeArgv($this->Route->path, $this->args());
   }
 }
