@@ -11,12 +11,10 @@ class ColonFormatRoute {
   // massaged function, class:method strings have been converted
   // to [class, method] for simplicity
   public $fn;
-  public $func_type;
 
   function __construct(string $path, $fn) {
     $this->path = $path;
     $this->fn = $this->parseFunc($fn);
-    $this->func_type = $this->determineFuncType($this->fn);
   }
 
   function expectedArgs() {
@@ -30,7 +28,7 @@ class ColonFormatRoute {
     }
 
     $Args2 = null;
-    if ($this->func_type == self::TYPE_METHOD) {
+    if ($this->funcType() == self::TYPE_METHOD) {
       $Args2 = $this->runAdjacentFunc(null, '_args', 'ColonFormatArgs');
     }
 
@@ -38,7 +36,7 @@ class ColonFormatRoute {
   }
 
   function runAdjacentFunc(?object $Object, string $name, ?string $expected_type, array $args=[]) {
-    if ($this->func_type != self::TYPE_METHOD) {
+    if ($this->funcType() != self::TYPE_METHOD) {
       return;
     }
 
@@ -113,7 +111,7 @@ class ColonFormatRoute {
   // Job class should cache this result so class:validate() runs on the same object
   // as the main function we're going to run
   function Object() {
-    if ($this->func_type != self::TYPE_METHOD) {
+    if ($this->funcType() != self::TYPE_METHOD) {
       return;
     }
 
@@ -130,7 +128,7 @@ class ColonFormatRoute {
   }
 
   function Method() {
-    if (! in_array($this->func_type, [self::TYPE_METHOD, self::TYPE_STATIC_METHOD])) {
+    if (! in_array($this->funcType(), [self::TYPE_METHOD, self::TYPE_STATIC_METHOD])) {
       return;
     }
 
@@ -175,14 +173,14 @@ class ColonFormatRoute {
     throw new Exception("Function for $this does not look valid");
   }
 
-  private function determineFuncType($fn) {
-    if ($fn instanceof Closure && is_callable($fn)) {
+  function funcType() {
+    if ($this->fn instanceof Closure && is_callable($this->fn)) {
       return self::TYPE_CLOSURE;
     }
-    if (is_string($fn) && is_callable($fn)) {
+    if (is_string($this->fn) && is_callable($this->fn)) {
       return self::TYPE_FUNC_STRING;
     }
-    if (is_array($fn) && count($fn) == 2) {
+    if (is_array($this->fn) && count($this->fn) == 2) {
       if ($this->reflect()->isStatic()) {
         return self::TYPE_STATIC_METHOD;
       }
