@@ -46,6 +46,8 @@ class ColonFormatRouter implements Iterator, Countable {
     $expansions = [];
 
     foreach ($Job->args() as $key => $value) {
+      if (! is_string($value)) continue;
+
       if ($fn = $this->findExpansion($key, $value)) {
         $expansions[] = [$key, $value, $fn];
       }
