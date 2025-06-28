@@ -70,8 +70,12 @@ class ColonFormatRoute {
   static function runWithArgs(callable $fn, array $args) {
     $fn_args = [];
     $Params = ColonFormatRoute::_reflect($fn)->getParameters();
-    if (count($Params) == 1 && strval($Params[0]->getType()) == 'array') {
-      return $fn([$args]);
+
+    if (count($Params) == 1) {
+      $Type = $Params[0]->getType();
+      if (($Type instanceof ReflectionNamedType) && $Type->getName() == 'array') {
+        return $fn($args);
+      }
     }
 
     foreach ($Params as $Param) {

@@ -15,6 +15,10 @@ class MyClass {
     return ['channel' => 'config', 'threads' => 10];
   }
 
+  function three_validate(array $args) {
+    var_dump($args);
+  }
+
   function hello_args() {
     $Args = new ColonFormatArgs();
     $Args->add('race');
@@ -51,12 +55,16 @@ class MyClass {
   function expArray(bool $good) {
     var_dump($good);
   }
+
+  function three() {
+  }
 }
 
 
 $Router = ColonFormatRouter::get();
 $Router->add('testroute:one', 'MyClass:hello');
 $Router->add('testroute:two', 'MyClass:expArray');
+$Router->add('testroute:three', 'MyClass:three');
 
 $Router->addExpansion('name', 'all', fn() => ['Sergey', 'Josh', 'Dusty']);
 $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
