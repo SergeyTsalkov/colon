@@ -5,6 +5,7 @@ require_once __DIR__ . '/vendor/autoload.php';
 class MyClass {
   public $race='human';
   public $job_path;
+  public bool $good=false;
 
   function config() {
     return ['channel' => 'common'];
@@ -47,8 +48,8 @@ class MyClass {
     return $Args;
   }
 
-  function expArray() {
-    var_dump($hash);
+  function expArray(bool $good) {
+    var_dump($good);
   }
 }
 

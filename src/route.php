@@ -78,7 +78,7 @@ class ColonFormatRoute {
       $name = $Param->getName();
 
       if (array_key_exists($name, $args)) {
-        $fn_args[] = $args[$name];
+        $fn_args[] = ColonFormatRoute::massageType($Param->getType(), $args[$name]);
       } else if ($Param->isDefaultValueAvailable()) {
         $fn_args[] = $Param->getDefaultValue();
       } else {
@@ -202,6 +202,15 @@ class ColonFormatRoute {
     if (is_string($fn) && function_exists($fn)) {
       return new ReflectionFunction($fn);
     }
+  }
+
+  static function massageType(?ReflectionType $Type, $input) {
+    if (! ($Type instanceof ReflectionNamedType)) return $input;
+    if ($Type->getName() == 'bool') {
+      if ($input === 'true') return true;
+      if ($input === 'false') return false;
+    }
+    return $input;
   }
 
   private function reflect() {

@@ -66,7 +66,9 @@ class ColonFormatJob {
 
         foreach ($this->args(true) as $key => $value) {
           if (! $Refl->hasProperty($key)) continue;
-          $this->Object->$key = $value;
+
+          $Type = $Refl->getProperty($key)->getType();
+          $this->Object->$key = ColonFormatRoute::massageType($Type, $value);
         }
       }
     }
