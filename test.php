@@ -69,8 +69,10 @@ $Router->add('testroute:three', 'MyClass:three');
 $Router->addExpansion('name', 'all', fn() => ['Sergey', 'Josh', 'Dusty']);
 $Router->addExpansion('age', 'all', fn() => [15, 30, 45]);
 
-$Parser = new ColonFormatParser($Router);
-$JobSet = $Parser->JobFromArgv($argv);
+// $Parser = new ColonFormatParser($Router);
+// $JobSet = $Parser->JobFromArgv($argv);
+
+$JobSet = $Router->makeJob('testroute:two', ['title' => 'hi', 'good' => true]);
 
 foreach ($JobSet as $Job) {
   echo "Running: $Job\n";

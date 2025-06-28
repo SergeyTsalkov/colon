@@ -26,6 +26,7 @@ class ColonFormatParser {
   static function makeArgv(string $path, array $args=[]) {
     $parts = [$path];
     foreach ($args as $key => $value) {
+      if (is_bool($value)) $value = $value ? 'true' : 'false';
       $parts[] = sprintf('%s:%s', $key, $value);
     }
 
